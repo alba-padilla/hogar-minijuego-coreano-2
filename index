@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crucigrama Coreano</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: rgba(176, 224, 230, 0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #loginArea, #gameArea {
+      position: absolute;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      background: white;
+      border: 2px solid #000;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      display: none;
+      flex-direction: column;
+      overflow: auto;
+    }
+
+    #loginArea.active, #gameArea.active {
+      display: flex;
+    }
+
+    #timer {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mobile .container {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    #crucigrama {
+      display: grid;
+      grid-template-columns: repeat(12, 30px);
+      grid-gap: 2px;
+      margin-right: 10px;
+    }
+
+    .cell {
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #000;
+      font-size: 16px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .selected {
+      background-color: yellow;
+    }
+
+    .correct {
+      background-color: #4caf50;
+      color: white;
+    }
+
+    .incorrect {
+      background-color: grey;
+    }
+
+    #wordList {
+      list-style-type: none;
+      padding: 0;
+      font-size: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      margin-top: 10px;
+    }
+
+    #wordList li {
+      margin: 5px 0;
+    }
+
+    .strikethrough {
+      text-decoration: line-through;
+    }
+
+    #wordListTitle {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 15px;
+      font-size: 14px;
+      border-radius: 5px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+      }
+
+      #crucigrama {
+        margin-right: 0;
+        margin-bottom: 20px;
+      }
+
+      #wordList {
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loginArea" class="active">
+    <h1>Crucigrama Coreano</h1>
+    <p>Introduce la contraseña:</p>
+    <input type="password" id="passwordInput" placeholder="Contraseña" />
+    <button id="enterButton">Enter</button>
+  </div>
+
+  <div id="gameArea">
+    <div id="timer">Tiempo: 00:00</div>
+    <div class="container">
+      <div id="crucigrama"></div>
+      <div>
+        <div id="wordListTitle">Tus palabras</div>
+        <ul id="wordList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const correctPassword = "dia2";
+    const words = [
+      { korean: "집", spanish: "casa" },
+      { korean: "가정", spanish: "hogar" },
+      { korean: "방", spanish: "habitación" },
+      { korean: "거실", spanish: "comedor" },
+      { korean: "주방", spanish: "cocina" },
+      { korean: "화장실", spanish: "baño" },
+      { korean: "침실", spanish: "dormitorio" },
+      { korean: "욕실", spanish: "baño (donde hay bañera)" },
+      { korean: "현관", spanish: "entrada para los zapatos" },
+      { korean: "다락방", spanish: "ático" },
+      { korean: "지하실", spanish: "sótano" },
+      { korean: "베란다", spanish: "solana" },
+      { korean: "마당", spanish: "patio exterior (antes de entrar a la casa)" },
+      { korean: "정원", spanish: "jardín" },
+      { korean: "창문", spanish: "ventana" },
+      { korean: "문", spanish: "puerta" }
+    ];
+
+    let selectedWords = [];
+    let currentSelection = [];
+    let foundWords = 0;
+    const gridData = [];
+
+    document.getElementById("enterButton").addEventListener("click", checkPassword);
+    document.getElementById("passwordInput").addEventListener("keypress", function (event) {
+      if (event.key === "Enter") {
+        checkPassword();
+      }
+    });
+
+    function checkPassword() {
+      const input = document.getElementById("passwordInput").value;
+      if (input === correctPassword) {
+        document.getElementById("loginArea").classList.remove("active");
+        document.getElementById("gameArea").classList.add("active");
+        startGame();
+      } else {
+        alert("Contraseña incorrecta.");
+      }
+    }
+
+    function startGame() {
+      initializeGame();
+      startTimer();
+    }
+
+    function initializeGame() {
+      selectedWords = words.sort(() => 0.5 - Math.random()).slice(0, 10);
+      populateWordList();
+      generateCrucigrama();
+    }
+
+    function populateWordList() {
+      const wordList = document.getElementById("wordList");
+      wordList.innerHTML = "";
+      selectedWords.forEach(word => {
+        const listItem = document.createElement("li");
+        listItem.textContent = word.spanish;
+        listItem.dataset.korean = word.korean;
+        wordList.appendChild(listItem);
+      });
+    }
+
+    function generateCrucigrama() {
+      const crucigrama = document.getElementById("crucigrama");
+      crucigrama.innerHTML = "";
+      const grid = Array(12).fill(null).map(() => Array(12).fill(""));
+
+      selectedWords.forEach(word => {
+        placeWordInGrid(grid, word.korean);
+      });
+
+      for (let i = 0; i < 12; i++) {
+        for (let j = 0; j < 12; j++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.textContent = grid[i][j] || getRandomSyllable();
+          cell.dataset.row = i;
+          cell.dataset.col = j;
+          cell.addEventListener("click", () => selectCell(cell, grid));
+          crucigrama.appendChild(cell);
+          if (!gridData[i]) gridData[i] = [];
+          gridData[i][j] = grid[i][j];
+        }
+      }
+    }
+
+    function placeWordInGrid(grid, word) {
+      const directions = [[1, 0], [0, 1]]; // Vertical hacia abajo y horizontal hacia la derecha
+      let placed = false;
+
+      while (!placed) {
+        const direction = directions[Math.floor(Math.random() * directions.length)];
+        const startX = Math.floor(Math.random() * 12);
+        const startY = Math.floor(Math.random() * 12);
+
+        if (canPlaceWord(grid, word, startX, startY, direction)) {
+          for (let k = 0; k < word.length; k++) {
+            const x = startX + k * direction[0];
+            const y = startY + k * direction[1];
+            grid[x][y] = word[k];
+          }
+          placed = true;
+        }
+      }
+    }
+
+    function canPlaceWord(grid, word, startX, startY, direction) {
+      for (let k = 0; k < word.length; k++) {
+        const x = startX + k * direction[0];
+        const y = startY + k * direction[1];
+        if (x < 0 || x >= 12 || y < 0 || y >= 12 || (grid[x][y] && grid[x][y] !== word[k])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function getRandomSyllable() {
+      const syllables = Array.from(new Set(words.flatMap(word => word.korean.split(''))));
+      return syllables[Math.floor(Math.random() * syllables.length)];
+    }
+
+    function startTimer() {
+      let seconds = 0;
+      setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const secs = (seconds % 60).toString().padStart(2, '0');
+        document.getElementById("timer").textContent = `Tiempo: ${minutes}:${secs}`;
+      }, 1000);
+    }
+
+    function selectCell(cell, grid) {
+      const row = parseInt(cell.dataset.row);
+      const col = parseInt(cell.dataset.col);
+      currentSelection.push({ cell, row, col });
+
+      const currentWord = currentSelection.map(({ row, col }) => grid[row][col]).join('');
+      const matchingWord = selectedWords.find(word => word.korean === currentWord);
+
+      if (matchingWord) {
+        currentSelection.forEach(({ cell }) => cell.classList.add("correct"));
+        const listItem = Array.from(document.querySelectorAll('#wordList li')).find(li => li.dataset.korean === matchingWord.korean);
+        if (listItem) {
+          listItem.classList.add("strikethrough");
+        }
+        foundWords++;
+        currentSelection = [];
+        if (foundWords === 10) {
+          setTimeout(() => alert("¡Felicidades! Has completado el crucigrama."), 500);
+        }
+      } else if (!matchingWord && currentWord.length >= 2) {
+        currentSelection.forEach(({ cell }) => cell.classList.add("incorrect"));
+        setTimeout(() => currentSelection.forEach(({ cell }) => cell.classList.remove("incorrect")), 1000);
+        currentSelection = [];
+      }
+    }
+  </script>
+</body>
+</html>
