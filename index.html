@@ -65,6 +65,10 @@
       background-color: #f44336;
       color: white;
     }
+
+    .incorrect {
+      color: red; /* CAMBIO1: Añadir esta clase para resaltar en rojo */
+    }
   </style>
 </head>
 <body>
@@ -199,13 +203,13 @@
       if ((isCorrect && isMatch) || (!isCorrect && !isMatch)) {
         score++;
         document.getElementById("score").textContent = `Puntuación: ${score}`;
-      }
-
-      if (score >= 20) {
-        alert("¡Ganaste la partida!");
-        startGame();
-      } else {
         generateWord();
+      } else {
+        wordElement.classList.add("incorrect"); // CAMBIO1: Resaltar en rojo si es incorrecto
+        setTimeout(() => {
+          wordElement.classList.remove("incorrect"); // CAMBIO1: Eliminar el resaltado después de un tiempo
+          generateWord();
+        }, 1000); // CAMBIO1: Esperar 1 segundo antes de cambiar la palabra
       }
     }
   </script>
